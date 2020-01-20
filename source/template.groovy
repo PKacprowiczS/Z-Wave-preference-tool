@@ -1,10 +1,10 @@
 preferences {
 	parameterMap.each {
 		input (
-				title: it.name,
-				description: it.description,
-				type: "paragraph",
-				element: "paragraph"
+			title: it.name,
+			description: it.description,
+			type: "paragraph",
+			element: "paragraph"
 		)
 
 		switch(it.type) {
@@ -31,7 +31,7 @@ preferences {
 					type: "paragraph",
 					element: "paragraph",
 					description: "Option enabled: ${it.activeDescription}\n" + 
-						"Option disablePending: ${it.inactiveDescription}" 
+						"Option disabled: ${it.inactiveDescription}" 
 				)
 				input(
 					name: it.key, 
