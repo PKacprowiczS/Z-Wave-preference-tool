@@ -152,8 +152,7 @@ if __name__ == "__main__":
         sys.exit("No path provided")
 
     try:
-        # productData = element_tree.parse(arguments.productData[0]) TODO: uncomment this
-        productData = element_tree.parse("/home/p.kacprowicz/side_projects/preferences-generator/source/ZC10-16125357.XML")
+        productData = element_tree.parse(arguments.productData[0])
     except IOError:
         print("Couldn't find file at provided path. Aborting.")
         sys.exit("File doesn't exist")
