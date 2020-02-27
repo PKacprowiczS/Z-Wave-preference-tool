@@ -61,7 +61,7 @@ def writeToGroovyFile(parametersList, outputFilename):
     formatter.addIndentation()
     for parameter in parametersList:
         if not firstLoop:
-            formatter.writeLine(',')
+            formatter.writeLine(',', applyIndentation=False)
             
         formatter.writeLine('[')
         formatter.addIndentation()
@@ -141,6 +141,7 @@ def writeToGroovyFile(parametersList, outputFilename):
     formatter.writeLine('')
     formatter.removeIndentation()
     formatter.writeLine("]}", escapeChar='', forceCurly=True)
+    print(f'Output filename: {outputFilename}')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
