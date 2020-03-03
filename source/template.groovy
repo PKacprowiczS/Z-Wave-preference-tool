@@ -1,4 +1,5 @@
 preferences {
+	// Preferences template begin
 	parameterMap.each {
 		input (
 			title: it.name,
@@ -63,9 +64,11 @@ preferences {
 				break
 		}
 	}
+	// Preferences template end
 }
 
 def installed() {
+	// Preferences template begin
 	state.currentPreferencesState = [:]
 	parameterMap.each {
 		state.currentPreferencesState."$it.key" = [:]
@@ -76,9 +79,11 @@ def installed() {
 			state.currentPreferencesState."$it.key".status = "synced"
 		}
 	}
+	// Preferences template end
 }
 
 def updated() {
+	// Preferences template begin
 	parameterMap.each {
 		if (state.currentPreferencesState."$it.key".value != settings."$it.key" && settings."$it.key") {
 			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
@@ -96,6 +101,7 @@ def updated() {
 		}
 	}
 	syncConfiguration()
+	// Preferences template end
 }
 
 private syncConfiguration() {
@@ -117,6 +123,7 @@ private syncConfiguration() {
 }
 
 def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport cmd) {
+	// Preferences template begin
 	log.debug "Configuration report: ${cmd}"
 	def preference = parameterMap.find( {it.parameterNumber == cmd.parameterNumber} )
 	def key = preference.key
@@ -134,6 +141,7 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 		state.currentPreferencesState."$key"?.status = "syncPending"
 		runIn(5, "syncConfiguration", [overwrite: true])
 	}
+	// Preferences template end
 }
 
 private getPreferenceValue(preference, value = "default") {

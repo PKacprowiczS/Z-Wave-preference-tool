@@ -1,6 +1,5 @@
 import argparse
 import xml.etree.ElementTree as element_tree
-import json
 from text_formatting import OutputFormatter
 
 def createParametersList(parameterRoot):
