@@ -47,8 +47,8 @@ preferences {
 					name: it.key, 
 					title: "Select",
 					type: "enum",
-					options: it.values.values(),
-					defaultValue: it.values[it.defaultValue],
+					options: it.values,
+					defaultValue: it.defaultValue,
 					required: false
 				)
 				break
@@ -105,18 +105,14 @@ def updated() {
 }
 
 private syncConfiguration() {
-	int value
-	String parameterKey
 	def commands = []
 	parameterMap.each {
 		if (state.currentPreferencesState."$it.key".status == "syncPending") {
-            value = getCommandValue(it)
-            commands += secure(zwave.configurationV2.configurationSet(scaledConfigurationValue: value, parameterNumber: it.parameterNumber, size: it.size))
-		    commands += secure(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+            commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: getCommandValue(it), parameterNumber: it.parameterNumber, size: it.size))
+		    commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
 		} else if (state.currentPreferencesState."$it.key".status == "disablePending") {
-			commands += secure(zwave.configurationV2.configurationSet(scaledConfigurationValue: value, parameterNumber: it.parameterNumber, size: it.size))
-			commands += secure(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
-			value = it.disableValue
+			commands += encap(zwave.configurationV2.configurationSet(scaledConfigurationValue: it.disableValue, parameterNumber: it.parameterNumber, size: it.size))
+			commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
 		}
 	}
 	sendHubCommand(commands)
@@ -148,7 +144,7 @@ private getPreferenceValue(preference, value = "default") {
 	def integerValue = value == "default" ? preference.defaultValue : value.intValue()
 	switch (preference.type) {
 		case "enum":
-			return preference.values[integerValue]
+			return String.valueOf(integerValue)
 		case "boolean":
 			return String.valueOf(preference.optionActive == integerValue)
 		default:
@@ -159,14 +155,26 @@ private getPreferenceValue(preference, value = "default") {
 private getCommandValue(preference) {
 	def parameterKey = preference.key
 	switch (preference.type) {
-		case "enum":
-			return preference.values.find { it.value == settings."$parameterKey" }?.key
 		case "boolean":
 			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
 		case "boolRange":
 			def parameterKeyBoolean = parameterKey + "Boolean"
 			return settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
 		default:
-			return settings."$parameterKey"
+			return Integer.parseInt(settings."$parameterKey")
+	}
+}
+
+private encap(cmd, endpoint = null) {
+	if (cmd) {
+		if (endpoint) {
+			cmd = zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint: endpoint).encapsulate(cmd)
+		}
+
+		if (zwaveInfo.zw.endsWith("s")) {
+			zwave.securityV1.securityMessageEncapsulation().encapsulate(cmd).format()
+		} else {
+			cmd.format()
+		}
 	}
 }
