@@ -85,19 +85,23 @@ def installed() {
 def updated() {
 	// Preferences template begin
 	parameterMap.each {
-		if (state.currentPreferencesState."$it.key".value != settings."$it.key" && settings."$it.key") {
+		if (isPreferenceChanged(it)) {
 			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
 			state.currentPreferencesState."$it.key".status = "syncPending"
+			if (it.type == "boolRange") {
+				def preferenceName = it.key + "Boolean"
+				if (notNullCheck(settings."$preferenceName")) {
+					if (!settings."$preferenceName") {
+						state.currentPreferencesState."$it.key".status = "disablePending"
+					} else if (state.currentPreferencesState."$it.key".status == "disabled") {
+						state.currentPreferencesState."$it.key".status = "syncPending"
+					}
+				} else {
+					state.currentPreferencesState."$it.key".status = "syncPending"
+				}
+			}
 		} else if (!state.currentPreferencesState."$it.key".value) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
-		}
-		if (it.type == "boolRange") {
-			def preferenceName = it.key + "Boolean"
-			if (!settings."$preferenceName") {
-				state.currentPreferencesState."$it.key".status = "disablePending"
-			} else if (state.currentPreferencesState."$it.key".status == "disabled") {
-				state.currentPreferencesState."$it.key".status = "syncPending"
-			}
 		}
 	}
 	syncConfiguration()
@@ -159,10 +163,33 @@ private getCommandValue(preference) {
 			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
 		case "boolRange":
 			def parameterKeyBoolean = parameterKey + "Boolean"
-			return settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
+			return !notNullCheck(settings."$parameterKeyBoolean") || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
+		case "range":
+			return settings."$parameterKey"
 		default:
 			return Integer.parseInt(settings."$parameterKey")
 	}
+}
+
+private isPreferenceChanged(preference) {
+	if (notNullCheck(settings."$preference.key")) {
+		if (preference.type == "boolRange") {
+			def boolName = preference.key + "Boolean"
+			if (state.currentPreferencesState."$preference.key".status == "disabled") {
+				return settings."$boolName"
+			} else {
+				return state.currentPreferencesState."$preference.key".value != settings."$preference.key" || !settings."$boolName"
+			}
+		} else {
+			return state.currentPreferencesState."$preference.key".value != settings."$preference.key"
+		}
+	} else {
+		return false
+	}
+}
+
+private notNullCheck(value) {
+	return value != null
 }
 
 private encap(cmd, endpoint = null) {
