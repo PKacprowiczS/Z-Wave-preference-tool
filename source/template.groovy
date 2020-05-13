@@ -36,7 +36,7 @@ preferences {
 				)
 				input(
 					name: it.key, 
-					type: "boolean",
+					type: "bool",
 					title: "Enable",
 					defaultValue: it.defaultValue == it.activeOption,
 					required: false
@@ -79,6 +79,7 @@ def installed() {
 			state.currentPreferencesState."$it.key".status = "synced"
 		}
 	}
+	readConfigurationFromTheDevice();
 	// Preferences template end
 }
 
@@ -108,6 +109,15 @@ def updated() {
 	// Preferences template end
 }
 
+private readConfigurationFromTheDevice() {
+	def commands = []
+	parameterMap.each {
+		state.currentPreferencesState."$it.key".status = "reverseSyncPending"
+		commands += encap(zwave.configurationV2.configurationGet(parameterNumber: it.parameterNumber))
+	}
+	sendHubCommand(commands)
+}
+
 private syncConfiguration() {
 	def commands = []
 	parameterMap.each {
@@ -128,18 +138,25 @@ def zwaveEvent(physicalgraph.zwave.commands.configurationv2.ConfigurationReport 
 	def preference = parameterMap.find( {it.parameterNumber == cmd.parameterNumber} )
 	def key = preference.key
 	def preferenceValue = getPreferenceValue(preference, cmd.scaledConfigurationValue)
-	if (settings."$key" == preferenceValue) {
-		state.currentPreferencesState."$key".value = settings."$key"
+
+	if(state.currentPreferencesState."$key".status == "reverseSyncPending"){
+		log.debug "reverseSyncPending"
+		state.currentPreferencesState."$key".value = preferenceValue
 		state.currentPreferencesState."$key".status = "synced"
-	} else if (preference.type == "boolRange") {
-		if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
-			state.currentPreferencesState."$key".status = "disabled"
-		} else {
-			runIn(5, "syncConfiguration", [overwrite: true])
-		}
 	} else {
-		state.currentPreferencesState."$key"?.status = "syncPending"
-		runIn(5, "syncConfiguration", [overwrite: true])
+		if (settings."$key" == preferenceValue) {
+			state.currentPreferencesState."$key".value = settings."$key"
+			state.currentPreferencesState."$key".status = "synced"
+		} else if (preference.type == "boolRange") {
+			if (state.currentPreferencesState."$key".status == "disablePending" && preferenceValue == preference.disableValue) {
+				state.currentPreferencesState."$key".status = "disabled"
+			} else {
+				runIn(5, "syncConfiguration", [overwrite: true])
+			}
+		} else {
+			state.currentPreferencesState."$key"?.status = "syncPending"
+			runIn(5, "syncConfiguratioWn", [overwrite: true])
+		}
 	}
 	// Preferences template end
 }
