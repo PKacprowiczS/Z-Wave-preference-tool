@@ -100,7 +100,7 @@ def updated() {
 					state.currentPreferencesState."$it.key".status = "syncPending"
 				}
 			}
-		} else if (!state.currentPreferencesState."$it.key".value) {
+		} else if (state.currentPreferencesState."$it.key".value == null) {
 			log.warn "Preference ${it.key} no. ${it.parameterNumber} has no value. Please check preference declaration for errors."
 		}
 	}
