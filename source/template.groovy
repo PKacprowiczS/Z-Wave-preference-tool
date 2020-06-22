@@ -159,11 +159,12 @@ private getPreferenceValue(preference, value = "default") {
 private getCommandValue(preference) {
 	def parameterKey = preference.key
 	switch (preference.type) {
+		// boolean values are returned as strings from the UI preferences: 'true', 'false'
 		case "boolean":
-			return settings."$parameterKey" ? preference.optionActive : preference.optionInactive
+			return settings."$parameterKey" == "true" ? preference.optionActive : preference.optionInactive
 		case "boolRange":
 			def parameterKeyBoolean = parameterKey + "Boolean"
-			return !notNullCheck(settings."$parameterKeyBoolean") || settings."$parameterKeyBoolean" ? settings."$parameterKey" : preference.disableValue
+			return !notNullCheck(settings."$parameterKeyBoolean") || settings."$parameterKeyBoolean" == "true" ? settings."$parameterKey" : preference.disableValue
 		case "range":
 			return settings."$parameterKey"
 		default:
