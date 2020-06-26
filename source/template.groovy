@@ -85,7 +85,7 @@ def installed() {
 def updated() {
 	// Preferences template begin
 	parameterMap.each {
-		if (isPreferenceChanged(it)) {
+		if (isPreferenceChanged(it) && !excludeParameterFromSync(it)) {
 			log.debug "Preference ${it.key} has been updated from value: ${state.currentPreferencesState."$it.key".value} to ${settings."$it.key"}"
 			state.currentPreferencesState."$it.key".status = "syncPending"
 			if (it.type == "boolRange") {
@@ -107,6 +107,27 @@ def updated() {
 	syncConfiguration()
 	// Preferences template end
 }
+
+def excludeParameterFromSync(preference){
+	// Preferences exclusion template start
+	def exclude = false
+
+	// sometimes in one DTH there are many devices supported,
+	// but some settings may not be supported by certain model
+	// example code below:
+	/* if (preference.key == "chosenPreferenceKey") {
+		if (isCertainModel() && otherConditions == true){
+			exclude = true
+		}
+	} */
+
+	if (exclude) {
+		log.warn "Preference no ${preference.parameterNumber} - ${preference.key} is not supported by this device"
+	}
+	return exclude
+	// Preferences exclusion template end
+}
+
 
 private syncConfiguration() {
 	def commands = []
